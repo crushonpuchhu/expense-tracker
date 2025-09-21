@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -12,85 +12,76 @@ import {
 } from "@heroui/react";
 import Loading from "../../component/LodingUi/Loding.jsx";
 
-
-
-
-
 export default function LoginPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [Load, SetLoad] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-  SetLoad(true);
-
-  try {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email, password: password }),
-    });
-
-    const data = await res.json();
-    SetLoad(false);
-
-    if (!res.ok) {
+    if (!email || !password) {
       return addToast({
         title: "Error",
-        description: data.message || "Login failed",
+        description: "All fields are required",
         color: "danger",
       });
     }
 
-    addToast({
-      title: "Login",
-      description: "Login successful!",
-      color: "success",
-    });
-     
+    setLoading(true);
 
-    
-    
-    // Get user info
-    const userRes = await fetch("/api/auth/me", { method: "GET", credentials: "include" });
-    const userData = await userRes.json();
+    try {
+      // Login API call
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include", // important for HttpOnly cookies
+      });
 
-    if (!userRes.ok || !userData.user) {
-      return addToast({
+      const data = await res.json();
+      setLoading(false);
+
+      if (!res.ok) {
+        return addToast({
+          title: "Error",
+          description: data.error || "Login failed",
+          color: "danger",
+        });
+      }
+
+      // Safely handle user object
+      const user = data.user || { name: "User", role: "user" };
+
+      // Toast
+      addToast({
+        title: "Login Successful",
+        description: `Welcome back, ${user.name}!`,
+        color: "success",
+      });
+
+      // ✅ Role-based redirect
+      switch (user.role) {
+        case "admin":
+          router.push("/Admin");
+          break;
+        default:
+          router.push("/Dashboard");
+      }
+    } catch (err) {
+      setLoading(false);
+      console.error(err);
+      addToast({
         title: "Error",
-        description: "Failed to fetch user info",
+        description: "Something went wrong, please try again",
         color: "danger",
       });
     }
-     console.log(userData.user)
-    // Role-based redirect
-    if (userData.user.role === "admin") {
-      router.push("/Admin");
-      
-     
-    } else {
-      router.push("/Dashboard");
-     
-      
-    }
-
-  } catch (error) {
-    SetLoad(false);
-    addToast({
-      title: "Error",
-      description: "Something went wrong",
-      color: "danger",
-    });
-    console.error(error);
-  }
-};
-
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-white via-blue-50 to-blue-200 px-4">
-      {Load && <Loading />}
+      {loading && <Loading />}
       <Card className="w-full max-w-md p-6 shadow-2xl rounded-2xl bg-white">
         <CardHeader className="flex flex-col items-center">
           <h2 className="text-2xl font-bold text-gray-800">Welcome Back 👋</h2>
@@ -131,17 +122,7 @@ export default function LoginPage() {
               type="submit"
               className="w-full bg-indigo-600 text-white font-semibold"
               radius="lg"
-              onPress={() => {
-                if (email && password) {
-                  handleSubmit();
-                } else {
-                  addToast({
-                    title: "Error",
-                    description: "All fields required",
-                    color: "danger",
-                  });
-                }
-              }}
+              onPress={handleSubmit}
             >
               Log In
             </Button>

@@ -1,75 +1,51 @@
-// app/api/auth/login/route.js
 import { NextResponse } from "next/server";
-import { connectDB } from "../../../../lib/mongodb.js";
-import User from "../../../../model/User.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
+import User from "../../../../model/User.js";
+import { connectDB } from "../../../../lib/mongodb.js";
+import { signAccessToken, generateRefreshToken } from "../../../../lib/auth.js";
+import { setRefreshCookie } from "../../../../lib/cookies";
 
 export async function POST(req) {
   await connectDB();
-  const body = await req.json();
-  const { email, password } = body;
+  const { email, password } = await req.json();
 
-  if (!email || !password) {
-    return NextResponse.json({ error: "Email and password required" }, { status: 400 });
-  }
-
-  try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return NextResponse.json({ message: "Incorrect password" }, { status: 401 });
-    }
-
-    // Access Token (short-lived)
-    const accessToken = jwt.sign(
-      { userId: user._id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "15m" }
+  const user = await User.findOne({ email });
+  if (!user)
+    return NextResponse.json(
+      { error: "Invalid credentials" },
+      { status: 401 }
     );
 
-    // Refresh Token (long-lived)
-    const refreshToken = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_REFRESH_SECRET, // 🔑 Use a different secret
-      { expiresIn: "7d" }
+  const isValid = await bcrypt.compare(password, user.password);
+  if (!isValid)
+    return NextResponse.json(
+      { error: "Invalid credentials" },
+      { status: 401 }
     );
 
-    // Save refresh token in DB (optional for invalidation)
-    user.refreshToken = refreshToken;
-    await user.save();
+  // Sign access token
+  const accessToken = signAccessToken({ sub: user._id.toString(), role: user.role });
 
-    const cookieStore = await cookies();
+  const ip = req.headers.get("x-forwarded-for") || "";
+  const ua = req.headers.get("user-agent") || "";
 
-    // Access token cookie
-    cookieStore.set({
-      name: "accessToken",
-      value: accessToken,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 15, // 15 minutes
-      path: "/",
-    });
+  // Generate refresh token
+  const { token: refreshToken } = await generateRefreshToken(
+    user._id.toString(),
+    ip,
+    ua
+  );
 
-    // Refresh token cookie
-    cookieStore.set({
-      name: "refreshToken",
-      value: refreshToken,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: "/",
-    });
+  // ✅ Await cookie setting
+  await setRefreshCookie(refreshToken);
 
-    return NextResponse.json({ message: "Login successful" });
-  } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+  // Return access token + user info
+  return NextResponse.json({
+    accessToken,
+    user: {
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
 }

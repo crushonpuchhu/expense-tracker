@@ -1,50 +1,20 @@
-// app/api/auth/refresh/route.js
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
-import { connectDB } from "../../../../lib/mongodb.js";
-import User from "../../../../model/User.js";
+import { cookies } from "next/headers";
+import { findSessionByRefreshToken, generateRefreshToken, revokeSession } from "../../../../lib/auth.js";
+import { setRefreshCookie } from "../../../../lib/cookies";
+import { signAccessToken } from "../../../../lib/auth.js";
 
-export async function POST() {
-  await connectDB();
-  const cookieStore = cookies();
-  const refreshToken = cookieStore.get("refreshToken")?.value;
+export async function POST(req) {
+  const presented = cookies().get("refresh_token")?.value;
+  if (!presented) return NextResponse.json({ error: "No refresh token" }, { status: 401 });
 
-  if (!refreshToken) {
-    return NextResponse.json({ message: "No refresh token" }, { status: 401 });
-  }
+  const session = await findSessionByRefreshToken(presented);
+  if (!session) return NextResponse.json({ error: "Invalid refresh token" }, { status: 401 });
 
-  try {
-    // Verify refresh token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+  await revokeSession(session._id.toString());
+  const { token: newRefresh } = await generateRefreshToken(session.userId, "", "");
+  setRefreshCookie(newRefresh);
 
-    // Optional: validate refresh token with DB (if you save it per user)
-    const user = await User.findById(decoded.userId);
-    if (!user || user.refreshToken !== refreshToken) {
-      return NextResponse.json({ message: "Invalid refresh token" }, { status: 403 });
-    }
-
-    // Generate new short-lived access token
-    const newAccessToken = jwt.sign(
-      { userId: user._id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "15m" }
-    );
-
-    const response = NextResponse.json({ message: "Token refreshed" });
-
-    response.cookies.set({
-      name: "accessToken",
-      value: newAccessToken,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 15, // 15 minutes
-      path: "/",
-    });
-
-    return response;
-  } catch (err) {
-    return NextResponse.json({ message: "Invalid or expired refresh token" }, { status: 403 });
-  }
+  const newAccess = signAccessToken({ sub: session.userId });
+  return NextResponse.json({ accessToken: newAccess });
 }
