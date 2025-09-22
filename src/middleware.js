@@ -1,4 +1,3 @@
-// middleware.js
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
@@ -14,60 +13,83 @@ export async function middleware(req) {
 
   const res = NextResponse.next();
 
+  const publicPages = ["/", "/LoginPage", "/CreateAccount"];
+  const protectedPaths = ["/Dashboard", "/Profile", "/Transactions", "/Budget", "/Admin"];
+
   try {
+    // 1️⃣ Validate tokens
     if (accessToken && refreshToken) {
-      // Verify session in DB
       const session = await findSessionByRefreshToken(refreshToken);
       if (session && !session.revoked) {
-        const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+        let decoded;
+        try {
+          decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+        } catch {
+          // Access token invalid, let it fall through
+          throw new Error("Invalid access token");
+        }
 
-        // Check session belongs to the same user
+        // Ensure session matches user
         if (decoded.sub !== session.userId.toString()) throw new Error("Session mismatch");
 
-        // EXTRA SECURITY: check device + IP
+        // EXTRA SECURITY: device + IP check
         const requestIp = req.headers.get("x-forwarded-for")?.split(",")[0] || req.ip || "::1";
         const requestDevice = req.headers.get("user-agent") || "unknown";
-
         if (session.ip !== requestIp || session.deviceInfo !== requestDevice) {
           throw new Error("Token used from another device");
         }
 
-        // If user is already logged in and trying to access home, redirect to dashboard
-        if (pathname === "/") {
+        // ✅ Redirect logged-in users away from public pages
+        if (publicPages.includes(pathname)) {
           url.pathname = "/Dashboard";
           return NextResponse.redirect(url);
         }
 
-        // Restrict /Admin for non-admins
+        // Admin restriction
         if (pathname.startsWith("/Admin") && decoded.role !== "admin") {
           url.pathname = "/Dashboard";
           return NextResponse.redirect(url);
         }
 
-        return res;
+        return res; // Allow access to protected pages
       }
     }
 
-    // If no valid tokens, clear cookies and redirect to login
-    res.cookies.set("accessToken", "", { maxAge: 0, path: "/" });
-    res.cookies.set("refreshToken", "", { maxAge: 0, path: "/" });
-    return NextResponse.redirect(new URL("/LoginPage", req.url));
+    // 2️⃣ Guest user trying to access protected page
+    if (protectedPaths.some((path) => pathname.startsWith(path))) {
+      res.cookies.set("accessToken", "", { maxAge: 0, path: "/" });
+      res.cookies.set("refreshToken", "", { maxAge: 0, path: "/" });
+      return NextResponse.redirect(new URL("/LoginPage", req.url));
+    }
+
+    // 3️⃣ Public pages for guests (home, login, create account)
+    return res;
+
   } catch (err) {
-    // On error, clear cookies and redirect to login
+    // 4️⃣ On error (invalid session, device mismatch, bad token)
     res.cookies.set("accessToken", "", { maxAge: 0, path: "/" });
     res.cookies.set("refreshToken", "", { maxAge: 0, path: "/" });
-    return NextResponse.redirect(new URL("/LoginPage", req.url));
+
+    // If trying to access protected page → redirect to login
+    if (protectedPaths.some((path) => pathname.startsWith(path))) {
+      return NextResponse.redirect(new URL("/LoginPage", req.url));
+    }
+
+    // If public page → let guest access without redirect loop
+    return res;
   }
 }
 
 export const config = {
   matcher: [
-    "/",
-    "/Dashboard/:path*",
-    "/Profile/:path*",
-    "/Transactions/:path*",
-    "/Budget/:path*",
-    "/Admin/:path*",
+    "/", 
+    "/Dashboard/:path*", 
+    "/Profile/:path*", 
+    "/Transactions/:path*", 
+    "/Budget/:path*", 
+    "/Admin/:path*", 
+    "/LoginPage", 
+    "/CreateAccount"
   ],
   runtime: "nodejs",
 };

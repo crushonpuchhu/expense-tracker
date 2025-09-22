@@ -4,7 +4,7 @@ import { randomBytes } from "crypto";
 import Session from "../model/Session.js";
 import { connectDB } from "../lib/mongodb.js";
 
-const ACCESS_EXP = "15m";
+const ACCESS_EXP = "30m";
 const REFRESH_DAYS = Number(process.env.REFRESH_TOKEN_DAYS || 30);
 
 // Sign JWT access token

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState ,useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Input,
@@ -12,11 +12,14 @@ import {
 } from "@heroui/react";
 import Loading from "../../component/LodingUi/Loding.jsx";
 
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -55,9 +58,10 @@ export default function LoginPage() {
         description: `Welcome , ${user.name}!`,
         color: "success",
       });
-
+      setLoading(true);
       if (user.role === "admin") router.push("/Admin");
       else router.push("/Dashboard");
+      setLoading(false);
     } catch (err) {
       setLoading(false);
       console.error(err);
