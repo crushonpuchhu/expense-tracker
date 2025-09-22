@@ -15,31 +15,54 @@ export async function middleware(req) {
   const res = NextResponse.next();
 
   try {
-    if (!accessToken || !refreshToken) throw new Error("Tokens missing");
+    if (accessToken && refreshToken) {
+      // Verify session in DB
+      const session = await findSessionByRefreshToken(refreshToken);
+      if (session && !session.revoked) {
+        const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
 
-    // Verify JWT
-    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+        // Check session belongs to the same user
+        if (decoded.sub !== session.userId.toString()) throw new Error("Session mismatch");
 
-    // Verify session in DB
-    const session = await findSessionByRefreshToken(refreshToken);
-    if (!session || session.revoked) throw new Error("Invalid session");
+        // EXTRA SECURITY: check device + IP
+        const requestIp = req.headers.get("x-forwarded-for")?.split(",")[0] || req.ip || "::1";
+        const requestDevice = req.headers.get("user-agent") || "unknown";
 
-    // Optional: verify session belongs to same user
-    if (decoded.sub !== session.userId.toString()) throw new Error("Session mismatch");
+        if (session.ip !== requestIp || session.deviceInfo !== requestDevice) {
+          throw new Error("Token used from another device");
+        }
 
-    // Everything is valid
-    return res;
+        // If user is already logged in and trying to access home, redirect to dashboard
+        if (pathname === "/") {
+          url.pathname = "/Dashboard";
+          return NextResponse.redirect(url);
+        }
+
+        // Restrict /Admin for non-admins
+        if (pathname.startsWith("/Admin") && decoded.role !== "admin") {
+          url.pathname = "/Dashboard";
+          return NextResponse.redirect(url);
+        }
+
+        return res;
+      }
+    }
+
+    // If no valid tokens, clear cookies and redirect to login
+    res.cookies.set("accessToken", "", { maxAge: 0, path: "/" });
+    res.cookies.set("refreshToken", "", { maxAge: 0, path: "/" });
+    return NextResponse.redirect(new URL("/LoginPage", req.url));
   } catch (err) {
-    // Invalid token or session → clear cookies & redirect to login
+    // On error, clear cookies and redirect to login
     res.cookies.set("accessToken", "", { maxAge: 0, path: "/" });
     res.cookies.set("refreshToken", "", { maxAge: 0, path: "/" });
     return NextResponse.redirect(new URL("/LoginPage", req.url));
   }
 }
 
-// Routes to protect
 export const config = {
   matcher: [
+    "/",
     "/Dashboard/:path*",
     "/Profile/:path*",
     "/Transactions/:path*",

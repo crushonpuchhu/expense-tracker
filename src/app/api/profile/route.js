@@ -7,6 +7,7 @@ import User from "../../../model/User.js";
 import bcrypt from "bcryptjs";
 import Transaction from "../../../model/Transaction.js";
 import { verifyAccessToken, revokeAllSessionsForUser } from "../../../lib/auth.js";
+import Session from "../../../model/Session.js";
 
 // Helper: decode user from access token in cookies
 async function getDecodedUser() {
@@ -83,7 +84,8 @@ export async function DELETE() {
     await Transaction.deleteMany({ userId });
 
     // Revoke all sessions (refresh tokens) for this user
-    await revokeAllSessionsForUser(userId);
+    // await revokeAllSessionsForUser(userId);
+    await Session.deleteMany({userId});
 
     // Clear cookies
     const res = NextResponse.json({ message: "Account deleted permanently" });
