@@ -14,7 +14,6 @@ import Loading from "../../component/LodingUi/Loding.jsx";
 
 export default function LoginPage() {
   const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,12 +30,11 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Login API call
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: "include", // important for HttpOnly cookies
+        credentials: "include",
       });
 
       const data = await res.json();
@@ -45,29 +43,21 @@ export default function LoginPage() {
       if (!res.ok) {
         return addToast({
           title: "Error",
-          description: data.error || "Login failed",
+          description: data.message || "Login failed",
           color: "danger",
         });
       }
 
-      // Safely handle user object
       const user = data.user || { name: "User", role: "user" };
 
-      // Toast
       addToast({
         title: "Login Successful",
-        description: `Welcome back, ${user.name}!`,
+        description: `Welcome , ${user.name}!`,
         color: "success",
       });
 
-      // ✅ Role-based redirect
-      switch (user.role) {
-        case "admin":
-          router.push("/Admin");
-          break;
-        default:
-          router.push("/Dashboard");
-      }
+      if (user.role === "admin") router.push("/Admin");
+      else router.push("/Dashboard");
     } catch (err) {
       setLoading(false);
       console.error(err);
@@ -87,7 +77,6 @@ export default function LoginPage() {
           <h2 className="text-2xl font-bold text-gray-800">Welcome Back 👋</h2>
           <p className="text-gray-500 text-sm mt-1">Please login to continue</p>
         </CardHeader>
-
         <CardBody>
           <section className="space-y-5">
             <Input
@@ -111,13 +100,11 @@ export default function LoginPage() {
               variant="bordered"
               required
             />
-
             <div className="flex justify-between items-center text-sm">
               <a href="/ForgotResetPassword" className="text-indigo-600 hover:underline">
                 Forgot password?
               </a>
             </div>
-
             <Button
               type="submit"
               className="w-full bg-indigo-600 text-white font-semibold"
@@ -127,13 +114,11 @@ export default function LoginPage() {
               Log In
             </Button>
           </section>
-
           <div className="flex items-center my-6">
             <Divider className="flex-1" />
             <span className="px-2 text-gray-400 text-sm">or</span>
             <Divider className="flex-1" />
           </div>
-
           <p className="text-center text-sm text-gray-500 mt-6">
             Don’t have an account?{" "}
             <a href="/CreateAccount" className="text-indigo-600 hover:underline font-medium">

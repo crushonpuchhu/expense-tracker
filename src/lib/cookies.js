@@ -1,21 +1,52 @@
 import { cookies } from "next/headers";
 
-// Set refresh token
-export async function setRefreshCookie(value) {
-  const cookieStore = cookies();
-  await cookieStore.set({
-    name: "refresh_token",
-    value: value,
+// Set access token
+export async function setAccessCookie(value) {
+  const cookieStore = await cookies();
+  cookieStore.set({
+    name: "accessToken",
+    value,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     path: "/",
-    maxAge: 60 * 60 * 24 * Number(process.env.REFRESH_TOKEN_DAYS || 30), // 30 days default
   });
 }
 
-// Clear refresh token
-export async function clearRefreshCookie() {
-  const cookieStore = cookies();
-  await cookieStore.delete("refresh_token", { path: "/" });
+// Set refresh token
+export async function setRefreshCookie(value) {
+  const cookieStore = await cookies();
+  cookieStore.set({
+    name: "refreshToken", // match the same name everywhere
+    value,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+  });
+}
+
+// Clear both access and refresh tokens
+export async function clearCookies() {
+  const cookieStore = await cookies();
+
+  cookieStore.set({
+    name: "accessToken",
+    value: "",
+    maxAge: 0,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+  });
+
+  cookieStore.set({
+    name: "refreshToken", // must match the set name
+    value: "",
+    maxAge: 0,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+  });
 }

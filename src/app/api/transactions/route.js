@@ -4,14 +4,28 @@ import jwt from "jsonwebtoken";
 import { connectDB } from "../../../lib/mongodb.js";
 import Transaction from "../../../model/Transaction.js";
 
-// Helper function to verify access token
+// Helper: Verify JWT access token from cookie
 async function verifyAccessToken() {
-  const cookieStore = cookies(); // ✅ App Router server-side cookies
+  const cookieStore = await cookies(); // must await
   const accessToken = cookieStore.get("accessToken")?.value;
 
   if (!accessToken) throw new Error("Unauthorized");
 
-  return jwt.verify(accessToken, process.env.JWT_SECRET);
+  const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+  return decoded; // decoded.sub should be userId
+}
+
+// Helper: Set accessToken cookie
+export async function setAccessTokenCookie(token) {
+  const cookieStore = cookies();
+  await cookieStore.set({
+    name: "accessToken",
+    value: token,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  });
 }
 
 // POST: Add new transaction
@@ -19,7 +33,6 @@ export async function POST(req) {
   try {
     await connectDB();
     const decoded = await verifyAccessToken();
-
     const { category, amount, note, date, method, type } = await req.json();
 
     if (!category || !amount) {
@@ -31,13 +44,13 @@ export async function POST(req) {
 
     if (!type || !["Income", "Expense"].includes(type)) {
       return NextResponse.json(
-        { message: "Type is required and must be 'Income' or 'Expense'" },
+        { message: "Type must be 'Income' or 'Expense'" },
         { status: 400 }
       );
     }
 
     const newTransaction = await Transaction.create({
-      userId: decoded.userId,
+      userId: decoded.sub,
       category,
       amount,
       method: method || "Cash",
@@ -46,14 +59,11 @@ export async function POST(req) {
       type,
     });
 
+    return NextResponse.json({ transaction: newTransaction }, { status: 201 });
+  } catch (err) {
+    console.error("Transaction POST Error:", err);
     return NextResponse.json(
-      { message: "Transaction added", transaction: newTransaction },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error("Transaction error:", error.message, error.stack);
-    return NextResponse.json(
-      { message: "Failed to add transaction", error: error.message },
+      { message: "Failed to add transaction", error: err.message },
       { status: 500 }
     );
   }
@@ -65,15 +75,15 @@ export async function GET() {
     await connectDB();
     const decoded = await verifyAccessToken();
 
-    const transactions = await Transaction.find({ userId: decoded.userId }).sort({
+    const transactions = await Transaction.find({ userId: decoded.sub }).sort({
       createdAt: -1,
     });
 
     return NextResponse.json({ transactions }, { status: 200 });
-  } catch (error) {
-    console.error("Fetch Transactions Error:", error);
+  } catch (err) {
+    console.error("Transaction GET Error:", err);
     return NextResponse.json(
-      { message: "Failed to fetch transactions", error: error.message },
+      { message: "Failed to fetch transactions", error: err.message },
       { status: 500 }
     );
   }
@@ -86,33 +96,28 @@ export async function DELETE(req) {
     const decoded = await verifyAccessToken();
     const { transactionId } = await req.json();
 
-    if (!transactionId) {
+    if (!transactionId)
       return NextResponse.json(
-        { message: "Transaction ID is required" },
+        { message: "Transaction ID required" },
         { status: 400 }
       );
-    }
 
     const deleted = await Transaction.findOneAndDelete({
       _id: transactionId,
-      userId: decoded.userId,
+      userId: decoded.sub,
     });
 
-    if (!deleted) {
+    if (!deleted)
       return NextResponse.json(
         { message: "Transaction not found or not authorized" },
         { status: 404 }
       );
-    }
 
+    return NextResponse.json({ message: "Transaction deleted" }, { status: 200 });
+  } catch (err) {
+    console.error("Transaction DELETE Error:", err);
     return NextResponse.json(
-      { message: "Transaction deleted successfully" },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Delete transaction error:", error);
-    return NextResponse.json(
-      { message: "Failed to delete transaction", error: error.message },
+      { message: "Failed to delete transaction", error: err.message },
       { status: 500 }
     );
   }

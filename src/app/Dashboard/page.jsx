@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
@@ -19,315 +20,111 @@ import {
   TableCell,
   addToast,
 } from "@heroui/react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
-
-// Pie chart data
-// const categoryData = [
-//   { name: "Food", value: 400, color: "#3B82F6" }, // blue
-//   { name: "Travel", value: 300, color: "#22C55E" }, // green
-//   { name: "Bills", value: 200, color: "#F97316" }, // orange
-//   { name: "Shopping", value: 250, color: "#EF4444" }, // red
-//   { name: "Others", value: 150, color: "#A855F7" }, // purple
-// ];
-
-// Line chart data
-// const expenseTrendData = [
-//   { month: "Jan", income: 3500, expense: 2100 },
-//   { month: "Feb", income: 3400, expense: 2000 },
-//   { month: "Mar", income: 3600, expense: 2200 },
-//   { month: "Apr", income: 3700, expense: 2300 },
-// ];
+import { PieChart, Pie, Cell, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts";
 
 export default function DashboardPage() {
-  // all data
-  const [alldata,Setalldata]=useState([]);
-  // mounthly data 
-  const [userTranction, SetuserTranction] = useState([]);
+  const [allData, setAllData] = useState([]);
+  const [userTransactions, setUserTransactions] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
+  const [expenseTrendData, setExpenseTrendData] = useState([]);
 
-  // chart mouthly data 
-  const [categoryData, SetcategoryData] = useState([]);
-  // all data chart or map
-  const[expenseTrendData,SetexpenseTrendData]=useState([]);
-
+  // Fetch transactions
   useEffect(() => {
-    //  fetch user tranction
     const fetchTransactions = async () => {
       try {
-        const res = await fetch("/api/transactions"); // 👈 create this route in backend
+        const res = await fetch("/api/transactions", { credentials: "include" });
         const data = await res.json();
-        if (res.ok) {
-           Setalldata(data.transactions);
-          const currentMonth = new Date().toISOString().slice(0, 7); // e.g., "2024-09"
-         
-          const filteredTransactions = data.transactions.filter((transaction) =>
-            transaction.date.startsWith(currentMonth)
-          );
 
-          SetuserTranction(filteredTransactions); // 👈 define state: const [transactions, SetTransactions] = useState([]);
-        } else {
-          addToast({
-            title: "error",
-            description: data.message,
-            color: "danger",
-          });
+        if (!res.ok) {
+          return addToast({ title: "Error", description: data.message, color: "danger" });
         }
+
+        setAllData(data.transactions);
+
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const filteredTransactions = data.transactions.filter(t => t.date.startsWith(currentMonth));
+        setUserTransactions(filteredTransactions);
       } catch (err) {
-        addToast({
-          title: "error",
-          description: "failed to load transactions",
-          color: "danger",
-        });
+        addToast({ title: "Error", description: "Failed to load transactions", color: "danger" });
       }
     };
     fetchTransactions();
   }, []);
 
+  // Generate category chart data
   useEffect(() => {
-    
-    function SETcategoryData() {
+    if (!userTransactions.length) return setCategoryData([]);
 
-   function getRandomColor(darkMode = false) {
-  // Predefined palette of bright, beautiful colors
-  const baseColors = [
-    "#F97316", // orange
-    "#FACC15", // mustard/yellow
-    "#3B82F6", // royal blue
-    "#EF4444", // red
-    "#10B981", // green
-    "#8B5CF6", // purple
-    "#EC4899", // pink
-    "#14B8A6", // teal
-  ];
+    const categoryMap = {};
+    const colors = ["#F97316","#FACC15","#3B82F6","#EF4444","#10B981","#8B5CF6","#EC4899","#14B8A6"];
 
-  // Keep a static shuffled copy of colors to ensure uniqueness
-  if (!getRandomColor.colors || getRandomColor.colors.length === 0) {
-    getRandomColor.colors = [...baseColors].sort(() => Math.random() - 0.5);
-  }
-
-  // Take the next color from the array
-  let color = getRandomColor.colors.shift();
-
-  if (darkMode) {
-    // Convert hex to RGB
-    const hex = color.replace("#", "");
-    let r = parseInt(hex.substring(0, 2), 16);
-    let g = parseInt(hex.substring(2, 4), 16);
-    let b = parseInt(hex.substring(4, 6), 16);
-
-    // Brighten slightly for dark background
-    r = Math.min(255, r + 50);
-    g = Math.min(255, g + 50);
-    b = Math.min(255, b + 50);
-
-    color = `rgb(${r}, ${g}, ${b})`;
-  }
-
-  return color;
-}
-
-
-      if (userTranction && userTranction.length > 0) {
-        const categoryMap = {};
-
-        userTranction.forEach((transaction) => {
-          const category = transaction.category;
-          const amount = Number(transaction.amount); // ensure numeric
-
-          if (categoryMap[category]) {
-            categoryMap[category].value += amount; // sum amount
-          } else {
-            categoryMap[category] = {
-              name: category,
-              value: amount,
-              color: getRandomColor(),
-            };
-          }
-        });
-
-        const newArray = Object.values(categoryMap);
-        SetcategoryData(newArray);
+    userTransactions.forEach(t => {
+      const category = t.category;
+      const amount = Number(t.amount);
+      if (categoryMap[category]) {
+        categoryMap[category].value += amount;
       } else {
-        SetcategoryData([]);
-      }
-    }
-
-    SETcategoryData();
-  }, [userTranction]);
-
-  //   useEffect(() => {
-  //   if (alldata && alldata.length > 0) {
-  //     const grouped = {};
-
-  //     alldata.forEach((transaction) => {
-  //       const dateObj = new Date(transaction.date);
-  //       const monthName = dateObj.toLocaleString("en-US", { month: "short" }); // Jan, Feb, ...
-
-  //       if (!grouped[monthName]) {
-  //         grouped[monthName] = { income: 0, expense: 0 };
-  //       }
-
-  //       if (transaction.type === "Income") {
-  //         grouped[monthName].income += Number(transaction.amount);
-  //       } else if (transaction.type === "Expense") {
-  //         grouped[monthName].expense += Number(transaction.amount);
-  //       }
-  //     });
-
-  //     const trendArray = Object.keys(grouped).map((month) => ({
-  //       month,
-  //       income: grouped[month].income,
-  //       expense: grouped[month].expense,
-  //     }));
-
-  //     SetexpenseTrendData(trendArray);
-      
-  //   }
-  // }, [alldata]);
-
-  useEffect(() => {
-  if (alldata && alldata.length > 0) {
-    const grouped = {};
-    const currentYear = new Date().getFullYear();
-
-    alldata.forEach((transaction) => {
-      const dateObj = new Date(transaction.date);
-      const year = dateObj.getFullYear();
-
-      // 🔹 Only include current year transactions
-      if (year === currentYear) {
-        const monthName = dateObj.toLocaleString("en-US", { month: "short" }); // Jan, Feb...
-        if (!grouped[monthName]) {
-          grouped[monthName] = { month: monthName, income: 0, expense: 0 };
-        }
-
-        if (transaction.type === "Income") {
-          grouped[monthName].income += Number(transaction.amount);
-        } else if (transaction.type === "Expense") {
-          grouped[monthName].expense += Number(transaction.amount);
-        }
+        categoryMap[category] = { name: category, value: amount, color: colors.shift() || "#000000" };
       }
     });
 
-    // 🔹 Sort months in order
+    setCategoryData(Object.values(categoryMap));
+  }, [userTransactions]);
+
+  // Generate expense trend data (current year)
+  useEffect(() => {
+    if (!allData.length) return;
+
+    const currentYear = new Date().getFullYear();
+    const grouped = {};
+
+    allData.forEach(t => {
+      const dateObj = new Date(t.date);
+      if (dateObj.getFullYear() !== currentYear) return;
+
+      const monthName = dateObj.toLocaleString("en-US", { month: "short" });
+      if (!grouped[monthName]) grouped[monthName] = { month: monthName, income: 0, expense: 0 };
+
+      if (t.type === "Income") grouped[monthName].income += Number(t.amount);
+      else grouped[monthName].expense += Number(t.amount);
+    });
+
     const trendArray = Object.values(grouped).sort((a, b) => {
       const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       return months.indexOf(a.month) - months.indexOf(b.month);
     });
 
-    SetexpenseTrendData(trendArray);
-  }
-}, [alldata]);
+    setExpenseTrendData(trendArray);
+  }, [allData]);
 
-
-
-  if(expenseTrendData!=[])
-  {
-    console.log(expenseTrendData)
-  }
-
-
-  // calculate data
-  function DataSummery(type) {
-   
-    if (type == "mounth income") {
-      return userTranction.reduce((total, e) => {
-        if (e.type == "Income") {
-          return (total = total + Number(e.amount));
-        }
-        return total;
-      }, 0);
-    }
-
-    if (type == "total expence") {
-      return userTranction.reduce((total, e) => {
-        if (e.type == "Expense") {
-          return (total = total + Number(e.amount));
-        }
-        return total;
-      }, 0);
-    }
-    return null;
-  }
+  // Calculate summary
+  const calcSummary = (type) => {
+    if (type === "monthlyIncome") return userTransactions.reduce((sum, t) => t.type === "Income" ? sum + Number(t.amount) : sum, 0);
+    if (type === "monthlyExpense") return userTransactions.reduce((sum, t) => t.type === "Expense" ? sum + Number(t.amount) : sum, 0);
+    return 0;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
       <Navbar shouldHideOnScroll>
-        <NavbarBrand>
-          <h1 className="font-bold text-xl">
-            Expense <span className=" font-light ">Tracker</span>
-          </h1>
-        </NavbarBrand>
+        <NavbarBrand><h1 className="font-bold text-xl">Expense <span className="font-light">Tracker</span></h1></NavbarBrand>
         <NavbarContent justify="center">
-          <NavbarItem>
-            <a href="#">Dashboard</a>
-          </NavbarItem>
-          <NavbarItem>
-            <a href="/Transactions">Transactions</a>
-          </NavbarItem>
-          <NavbarItem>
-            <a href="/Budget">Budgets</a>
-          </NavbarItem>
+          <NavbarItem><a href="#">Dashboard</a></NavbarItem>
+          <NavbarItem><a href="/Transactions">Transactions</a></NavbarItem>
+          <NavbarItem><a href="/Budget">Budgets</a></NavbarItem>
         </NavbarContent>
         <NavbarContent justify="end">
-          <Link href="/Profile">
-            <Avatar
-             
-              as="button"
-              color="primary"
-              name="Profile"
-              size="sm"
-              
-             alt="Profile"
-            />
-          </Link>
+          <Link href="/Profile"><Avatar as="button" color="primary" name="Profile" size="sm" alt="Profile"/></Link>
         </NavbarContent>
       </Navbar>
 
-      {/* Content */}
       <main className="p-6 space-y-6">
         {/* Top Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card shadow="sm">
-            <CardHeader>Total Balance</CardHeader>
-            <CardBody>
-              <p className="text-2xl font-bold">
-               
-                {"₹ "}
-                {userTranction != [] ? DataSummery("mounth income")-DataSummery("total expence") : 0}
-              </p>
-            </CardBody>
-          </Card>
-          <Card shadow="sm">
-            <CardHeader>Monthly Income</CardHeader>
-            <CardBody>
-              <p className="text-2xl font-bold text-green-600">
-                {"₹ "}
-                {userTranction != [] ? DataSummery("mounth income") : 0}
-              </p>
-            </CardBody>
-          </Card>
-          <Card shadow="sm">
-            <CardHeader>Monthly Expenses</CardHeader>
-            <CardBody>
-              <p className="text-2xl font-bold text-red-600">
-                {"₹ "}
-                {userTranction != [] ? DataSummery("total expence") : 0}
-              </p>
-            </CardBody>
-          </Card>
+          <Card shadow="sm"><CardHeader>Total Balance</CardHeader><CardBody><p className="text-2xl font-bold">₹{calcSummary("monthlyIncome") - calcSummary("monthlyExpense")}</p></CardBody></Card>
+          <Card shadow="sm"><CardHeader>Monthly Income</CardHeader><CardBody><p className="text-2xl font-bold text-green-600">₹{calcSummary("monthlyIncome")}</p></CardBody></Card>
+          <Card shadow="sm"><CardHeader>Monthly Expenses</CardHeader><CardBody><p className="text-2xl font-bold text-red-600">₹{calcSummary("monthlyExpense")}</p></CardBody></Card>
         </div>
 
         {/* Charts */}
@@ -336,27 +133,14 @@ export default function DashboardPage() {
             <CardHeader>Spending by Category</CardHeader>
             <CardBody>
               <ResponsiveContainer width="100%" height={250}>
-                {categoryData && categoryData.length > 0 ? (
+                {categoryData.length ? (
                   <PieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      dataKey="value"
-                      label
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
+                    <Pie data={categoryData} dataKey="value" cx="50%" cy="50%" outerRadius={80} label>
+                      {categoryData.map((entry, index) => <Cell key={index} fill={entry.color} />)}
                     </Pie>
                     <Tooltip />
                   </PieChart>
-                ) : (
-                  <div className="flex items-center justify-center h-52 text-gray-500">
-                    No transaction data
-                  </div>
-                )}
+                ) : (<div className="flex items-center justify-center h-52 text-gray-500">No transaction data</div>)}
               </ResponsiveContainer>
             </CardBody>
           </Card>
@@ -379,13 +163,11 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Transactions */}
+        {/* Recent Transactions */}
         <Card>
           <CardHeader className="flex justify-between items-center">
             <h3 className="font-medium">Recent Transactions</h3>
-            <Link href={"/Transactions"}>
-              <Button color="primary">Add Expense</Button>
-            </Link>
+            <Link href="/Transactions"><Button color="primary">Add Expense</Button></Link>
           </CardHeader>
           <CardBody>
             <Table aria-label="Recent Transactions Table">
@@ -396,7 +178,7 @@ export default function DashboardPage() {
                 <TableColumn>Amount</TableColumn>
               </TableHeader>
               <TableBody>
-                {userTranction.map((t, idx) => (
+                {userTransactions.map(t => (
                   <TableRow key={t._id}>
                     <TableCell>{t.date.split("T")[0]}</TableCell>
                     <TableCell>{t.note}</TableCell>

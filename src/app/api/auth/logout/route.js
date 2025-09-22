@@ -1,16 +1,41 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { findSessionByRefreshToken, revokeSession } from "../../../../lib/auth.js";
-import { clearRefreshCookie } from "../../../../lib/cookies";
+import {
+  findSessionByRefreshToken,
+  revokeSession,
+  revokeAllSessionsForUser,
+} from "../../../../lib/auth.js";
+import { clearCookies } from "../../../../lib/cookies.js";
 
-export async function POST() {
-  const presented = cookies().get("refresh_token")?.value;
-  if (presented) {
-    const session = await findSessionByRefreshToken(presented);
+export async function POST(req) {
+  const cookieStore = await cookies();
+  const refreshToken = cookieStore.get("refreshToken")?.value;
+
+  // Read query param ?all=true
+  const url = new URL(req.url);
+  const allDevices = url.searchParams.get("all") === "true";
+
+  if (refreshToken) {
+    const session = await findSessionByRefreshToken(refreshToken);
+
     if (session) {
-      await revokeSession(session._id.toString());
+      if (allDevices) {
+        // Revoke all sessions for this user
+        await revokeAllSessionsForUser(session.userId);
+      } else {
+        // Revoke only current session
+        await revokeSession(session._id.toString());
+      }
     }
   }
-  clearRefreshCookie();
-  return NextResponse.json({ ok: true });
+
+  // Clear cookies
+  await clearCookies();
+
+  return NextResponse.json({
+    ok: true,
+    message: allDevices
+      ? "Logged out from all devices"
+      : "Logged out successfully",
+  });
 }

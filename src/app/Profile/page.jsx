@@ -11,30 +11,53 @@ import {
 import { useRouter } from "next/navigation";
 import Loading from "../../component/LodingUi/Loding.jsx";
 
-
 export default function ProfileSettings() {
   const router = useRouter();
 
-
   const [load, Setload] = useState(false);
   const [userdata, Setuserdata] = useState({});
-  const [userTranction,SetuserTranction]=useState([]);
+  const [userTranction, SetuserTranction] = useState([]);
 
   const [name, Setname] = useState("");
   const [password, Setpassword] = useState("");
   const [currentpassword, Setcurrentpassword] = useState("");
 
-
-  
-  
   useEffect(() => {
     //   user data get
     const fetchProfile = async () => {
       try {
-        const res = await fetch("/api/profile");
+        const res = await fetch("/api/profile", { credentials: "include" });
         const data = await res.json();
         if (res.ok) {
-          Setuserdata(data);
+          Setuserdata(data.user);
+        } else {
+          addToast({
+            title: "Error",
+            description: data.error,
+            color: "danger",
+          });
+        }
+      } catch (err) {
+        addToast({
+          title: "Error",
+          description: "Something went wrong",
+          color: "danger",
+        });
+      }
+    };
+
+    //  fetch user tranction
+    const fetchTransactions = async () => {
+      try {
+        const res = await fetch("/api/transactions"); // 👈 create this route in backend
+        const data = await res.json();
+        if (res.ok) {
+          const currentMonth = new Date().toISOString().slice(0, 7); // e.g., "2024-09"
+          const filteredTransactions = data.transactions.filter((transaction) =>
+            transaction.date.startsWith(currentMonth)
+          );
+
+          SetuserTranction(filteredTransactions); // 👈 define state: const [transactions, SetTransactions] = useState([]);
         } else {
           addToast({
             title: "error",
@@ -45,85 +68,81 @@ export default function ProfileSettings() {
       } catch (err) {
         addToast({
           title: "error",
-          description: "something went wrong",
+          description: "failed to load transactions",
           color: "danger",
         });
       }
     };
 
-
-//  fetch user tranction
-   const fetchTransactions = async () => {
-    try {
-      const res = await fetch("/api/transactions"); // 👈 create this route in backend
-      const data = await res.json();
-      if (res.ok) {
-             const currentMonth = new Date().toISOString().slice(0, 7); // e.g., "2024-09"
-             const filteredTransactions = data.transactions.filter(transaction => transaction.date.startsWith(currentMonth));
-
-          
-         
-       SetuserTranction(filteredTransactions); // 👈 define state: const [transactions, SetTransactions] = useState([]);
-      
-      } else {
-        addToast({
-          title: "error",
-          description: data.message,
-          color: "danger",
-        });
-      }
-    } catch (err) {
-      addToast({
-        title: "error",
-        description: "failed to load transactions",
-        color: "danger",
-      });
-    }
-  };
-
-
-
-
-
-     fetchProfile();
-     fetchTransactions();
+    fetchProfile();
+    fetchTransactions();
   }, []);
 
-  //   logout function
+  // Normal logout
   const handleLogout = async () => {
     Setload(true);
     try {
       const res = await fetch("/api/auth/logout", { method: "POST" });
-      const data = await res.json(); // 👈 parse JSON
-
-      console.log("Logout response:", data); // 👈 print response
+      const data = await res.json();
       Setload(false);
+
       if (res.ok) {
         addToast({
-          title: "LogOut",
+          title: "Logged out",
           description: data.message,
           color: "success",
         });
-        router.push("/"); // redirect only if logout successful
+        router.push("/"); // redirect to home
       } else {
         addToast({
-          title: "error",
-          description: "Logout error try sometime later",
+          title: "Error",
+          description: "Failed to logout",
           color: "danger",
         });
       }
-    } catch (error) {
+    } catch (err) {
       Setload(false);
       addToast({
-        title: "error",
-        description: "somthing is wrong! try again",
+        title: "Error",
+        description: "Something went wrong! Try again.",
         color: "danger",
       });
     }
   };
-   
 
-  // name update 
+  // Logout from all devices
+  const handleLogoutAll = async () => {
+    Setload(true);
+    try {
+      const res = await fetch("/api/auth/logout?all=true", { method: "POST" });
+      const data = await res.json();
+      Setload(false);
+
+      if (res.ok) {
+        addToast({
+          title: "Logged out",
+          description: data.message,
+          color: "success",
+        });
+        router.push("/"); // redirect to home
+      } else {
+        addToast({
+          title: "Error",
+          description: "Failed to logout from all devices",
+          color: "danger",
+        });
+      }
+    } catch (err) {
+      Setload(false);
+      addToast({
+        title: "Error",
+        description: "Something went wrong! Try again.",
+        color: "danger",
+      });
+    }
+  };
+
+  // name update
   async function handleUpdateName() {
     if (name != "") {
       Setload(true);
@@ -167,7 +186,6 @@ export default function ProfileSettings() {
       });
     }
   }
-  
 
   // password update
   async function handleUpdatePassword() {
@@ -195,7 +213,7 @@ export default function ProfileSettings() {
         } else {
           addToast({
             title: "error",
-            description:data.error,
+            description: data.error,
             color: "danger",
           });
         }
@@ -216,9 +234,11 @@ export default function ProfileSettings() {
     }
   }
 
-// delete account parmanantly
- const handleDeleteAccount = async () => {
-    const confirmDelete = confirm("Are you sure you want to delete your account? This action is permanent!");
+  // delete account parmanantly
+  const handleDeleteAccount = async () => {
+    const confirmDelete = confirm(
+      "Are you sure you want to delete your account? This action is permanent!"
+    );
     if (!confirmDelete) return;
 
     Setload(true);
@@ -252,39 +272,26 @@ export default function ProfileSettings() {
     }
   };
 
-
-  function DataSummery(type){
-   
-    
-    if(type=="mounth income")
-    {
-       return userTranction.reduce((total,e)=>{
-        if(e.type=="Income")
-        {
-          return total=total+Number(e.amount)
+  function DataSummery(type) {
+    if (type == "mounth income") {
+      return userTranction.reduce((total, e) => {
+        if (e.type == "Income") {
+          return (total = total + Number(e.amount));
         }
-        return total
-        
-      
-      },0)
+        return total;
+      }, 0);
     }
 
-    if(type=="total expence")
-    {
-       return userTranction.reduce((total,e)=>{
-        if(e.type=="Expense")
-        {
-          return total=total+Number(e.amount)
+    if (type == "total expence") {
+      return userTranction.reduce((total, e) => {
+        if (e.type == "Expense") {
+          return (total = total + Number(e.amount));
         }
-        return total
-        
-      
-      },0)
+        return total;
+      }, 0);
     }
-    return null
-
+    return null;
   }
-
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-10">
@@ -307,20 +314,25 @@ export default function ProfileSettings() {
         <div className="p-4 rounded-xl bg-gray-100 dark:bg-gray-800">
           <h4 className="text-sm text-gray-500">Balance</h4>
           <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            {"₹ "}{ userTranction!=[]?DataSummery('mounth income')-DataSummery('total expence'):0}
+            {"₹ "}
+            {userTranction != []
+              ? DataSummery("mounth income") - DataSummery("total expence")
+              : 0}
           </p>
         </div>
         <div className="p-4 rounded-xl bg-green-100 dark:bg-green-900/40">
           <h4 className="text-sm text-gray-500">Income</h4>
           <p className="text-xl font-semibold text-green-600 dark:text-green-400">
             {/* $8,000 mounth income */}
-            {"₹ "}{ userTranction!=[]?DataSummery('mounth income'):0}
+            {"₹ "}
+            {userTranction != [] ? DataSummery("mounth income") : 0}
           </p>
         </div>
         <div className="p-4 rounded-xl bg-red-100 dark:bg-red-900/40">
           <h4 className="text-sm text-gray-500">Expenses</h4>
           <p className="text-xl font-semibold text-red-600 dark:text-red-400">
-            {"₹ "}{ userTranction!=[]?DataSummery('total expence'):0}
+            {"₹ "}
+            {userTranction != [] ? DataSummery("total expence") : 0}
           </p>
         </div>
       </div>
@@ -392,6 +404,9 @@ export default function ProfileSettings() {
           </Button>
           <Button onPress={handleLogout} color="default" variant="ghost">
             Logout
+          </Button>
+          <Button onPress={handleLogoutAll} color="warning" variant="flat">
+            Logout from All Devices
           </Button>
         </div>
       </section>

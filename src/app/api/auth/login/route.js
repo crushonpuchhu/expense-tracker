@@ -1,51 +1,40 @@
+// app/api/auth/login/route.js
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import User from "../../../../model/User.js";
 import { connectDB } from "../../../../lib/mongodb.js";
 import { signAccessToken, generateRefreshToken } from "../../../../lib/auth.js";
-import { setRefreshCookie } from "../../../../lib/cookies";
+import { setAccessCookie, setRefreshCookie } from "../../../../lib/cookies.js";
 
 export async function POST(req) {
   await connectDB();
   const { email, password } = await req.json();
 
   const user = await User.findOne({ email });
-  if (!user)
-    return NextResponse.json(
-      { error: "Invalid credentials" },
-      { status: 401 }
-    );
+  if (!user) return NextResponse.json({ message: "Invalid email or username" }, { status: 401 });
 
   const isValid = await bcrypt.compare(password, user.password);
-  if (!isValid)
-    return NextResponse.json(
-      { error: "Invalid credentials" },
-      { status: 401 }
-    );
+  if (!isValid) return NextResponse.json({ message: "Incorrect Password" }, { status: 401 });
 
-  // Sign access token
-  const accessToken = signAccessToken({ sub: user._id.toString(), role: user.role });
+  const accessToken = signAccessToken({
+    sub: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  });
 
-  const ip = req.headers.get("x-forwarded-for") || "";
-  const ua = req.headers.get("user-agent") || "";
+  const refreshTokenObj = await generateRefreshToken(user._id.toString(), req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress, req.headers["user-agent"] || "unknown-device");
 
-  // Generate refresh token
-  const { token: refreshToken } = await generateRefreshToken(
-    user._id.toString(),
-    ip,
-    ua
-  );
 
-  // ✅ Await cookie setting
-  await setRefreshCookie(refreshToken);
+  // ✅ set cookies properly
+  await setAccessCookie(accessToken);
+  await setRefreshCookie(refreshTokenObj.token);
 
-  // Return access token + user info
   return NextResponse.json({
-    accessToken,
+    message: "Login successful",
     user: {
       name: user.name,
-      email: user.email,
       role: user.role,
+      email: user.email,
     },
   });
 }

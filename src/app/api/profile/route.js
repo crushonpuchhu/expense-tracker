@@ -1,29 +1,35 @@
 // app/api/profile/route.js
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 import { connectDB } from "../../../lib/mongodb.js";
 import User from "../../../model/User.js";
 import bcrypt from "bcryptjs";
-
-async function verifyAccessToken(req) {
-  const token = req.cookies.get("accessToken")?.value;
+import Transaction from "../../../model/Transaction.js";
+import { verifyAccessToken, revokeAllSessionsForUser } from "../../../lib/auth.js";
+// Helper to verify JWT access token
+async function verifyAccessToken() {
+  const cookieStore = await cookies(); // ✅ must await
+  const token = cookieStore.get("accessToken")?.value;
   if (!token) throw new Error("Unauthorized");
-  return jwt.verify(token, process.env.JWT_SECRET);
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  return decoded;
 }
 
 // GET profile
-export async function GET(req) {
+export async function GET() {
   try {
-    const decoded = await verifyAccessToken(req);
+    const decoded = await verifyAccessToken();
 
     await connectDB();
-    const user = await User.findById(decoded.userId).select("-password");
+    const user = await User.findById(decoded.sub).select("-password"); // sub = userId in JWT
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(user);
+    return NextResponse.json({ user });
   } catch (err) {
     return NextResponse.json({ error: err.message || "Invalid token" }, { status: 401 });
   }
@@ -32,7 +38,7 @@ export async function GET(req) {
 // PATCH update profile
 export async function PATCH(req) {
   try {
-    const decoded = await verifyAccessToken(req);
+    const decoded = await verifyAccessToken();
     const { name, currentPassword, newPassword } = await req.json();
 
     if (!name && !newPassword) {
@@ -49,7 +55,7 @@ export async function PATCH(req) {
         return NextResponse.json({ error: "Current password is required" }, { status: 400 });
       }
 
-      const user = await User.findById(decoded.userId);
+      const user = await User.findById(decoded.sub);
       if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
       const isMatch = await bcrypt.compare(currentPassword, user.password);
@@ -59,7 +65,7 @@ export async function PATCH(req) {
       updateFields.password = hashedPassword;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(decoded.userId, updateFields, { new: true }).select("-password");
+    const updatedUser = await User.findByIdAndUpdate(decoded.sub, updateFields, { new: true }).select("-password");
 
     return NextResponse.json({
       message: "Profile updated successfully",
@@ -71,16 +77,27 @@ export async function PATCH(req) {
   }
 }
 
-// DELETE account
-export async function DELETE(req) {
+export async function DELETE() {
   try {
-    const decoded = await verifyAccessToken(req);
+    // Verify the access token
+    const decoded = await verifyAccessToken();
 
+    // Connect to MongoDB
     await connectDB();
-    await User.findByIdAndDelete(decoded.userId);
 
+    const userId = decoded.sub;
+
+    // Delete user document
+    await User.findByIdAndDelete(userId);
+
+    // Delete all transactions for the user
+    await Transaction.deleteMany({ userId });
+
+    // Revoke all sessions (refresh tokens)
+    await revokeAllSessionsForUser(userId);
+
+    // Clear cookies
     const res = NextResponse.json({ message: "Account deleted permanently" });
-    // Clear both accessToken & refreshToken cookies
     res.cookies.set({
       name: "accessToken",
       value: "",
@@ -103,6 +120,10 @@ export async function DELETE(req) {
     return res;
   } catch (err) {
     console.error("Delete account failed:", err);
-    return NextResponse.json({ error: err.message || "Delete failed" }, { status: 400 });
+    return NextResponse.json(
+      { error: err.message || "Delete failed" },
+      { status: 400 }
+    );
   }
 }
+
