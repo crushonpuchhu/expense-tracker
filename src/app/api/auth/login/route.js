@@ -1,4 +1,4 @@
-// app/api/auth/login/route.js
+// login.js
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import User from "../../../../model/User.js";
@@ -11,30 +11,31 @@ export async function POST(req) {
   const { email, password } = await req.json();
 
   const user = await User.findOne({ email });
-  if (!user) return NextResponse.json({ message: "Invalid email or username" }, { status: 401 });
+  if (!user) return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
 
   const isValid = await bcrypt.compare(password, user.password);
-  if (!isValid) return NextResponse.json({ message: "Incorrect Password" }, { status: 401 });
+  if (!isValid) return NextResponse.json({ message: "Incorrect password" }, { status: 401 });
 
+  // Access token
   const accessToken = signAccessToken({
     sub: user._id.toString(),
     email: user.email,
     role: user.role,
   });
 
-  const refreshTokenObj = await generateRefreshToken(user._id.toString(), req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress, req.headers["user-agent"] || "unknown-device");
+  // Device info & IP
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || req.socket.remoteAddress || "0.0.0.0";
+  const device = req.headers.get("user-agent") || "unknown-device";
 
+  // Refresh token
+  const refreshTokenObj = await generateRefreshToken(user._id.toString(), ip, device);
 
-  // ✅ set cookies properly
+  // Set cookies
   await setAccessCookie(accessToken);
   await setRefreshCookie(refreshTokenObj.token);
 
   return NextResponse.json({
     message: "Login successful",
-    user: {
-      name: user.name,
-      role: user.role,
-      email: user.email,
-    },
+    user: { name: user.name, email: user.email, role: user.role },
   });
 }

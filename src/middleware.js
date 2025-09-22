@@ -1,103 +1,50 @@
+// middleware.js
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
+import { findSessionByRefreshToken } from "./lib/auth.js";
 
 export async function middleware(req) {
   const url = req.nextUrl.clone();
   const pathname = url.pathname;
 
   const cookieStore = await cookies();
-  let accessToken = cookieStore.get("accessToken")?.value;
+  const accessToken = cookieStore.get("accessToken")?.value;
   const refreshToken = cookieStore.get("refreshToken")?.value;
 
-  let decoded = null;
+  const res = NextResponse.next();
 
   try {
-    if (accessToken) {
-      decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
-    } else if (refreshToken) {
-      // call refresh token API
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/refresh`, {
-        method: "POST",
-        headers: { cookie: `refreshToken=${refreshToken}` },
-      });
+    if (!accessToken || !refreshToken) throw new Error("Tokens missing");
 
-      if (!res.ok) throw new Error("Refresh failed");
+    // Verify JWT
+    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
 
-      const data = await res.json();
-      accessToken = data.accessToken;
+    // Verify session in DB
+    const session = await findSessionByRefreshToken(refreshToken);
+    if (!session || session.revoked) throw new Error("Invalid session");
 
-      // set new access token cookie
-      cookieStore.set({
-        name: "accessToken",
-        value: accessToken,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-      });
+    // Optional: verify session belongs to same user
+    if (decoded.sub !== session.userId.toString()) throw new Error("Session mismatch");
 
-      decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
-    }
+    // Everything is valid
+    return res;
   } catch (err) {
-    // clear invalid cookies if tokens are bad
-    const res = NextResponse.next();
+    // Invalid token or session → clear cookies & redirect to login
     res.cookies.set("accessToken", "", { maxAge: 0, path: "/" });
     res.cookies.set("refreshToken", "", { maxAge: 0, path: "/" });
-    decoded = null; // treat as logged out
+    return NextResponse.redirect(new URL("/LoginPage", req.url));
   }
-
-  const role = decoded?.role?.toLowerCase();
-
-  // If user hits home page "/"
-  if (pathname === "/") {
-    if (role) {
-      url.pathname = role === "admin" ? "/Admin" : "/Dashboard";
-      return NextResponse.redirect(url);
-    }
-    return NextResponse.next(); // show public home page if logged out
-  }
-
-  // Public routes
-  const publicRoutes = ["/LoginPage", "/CreateAccount"];
-  if (publicRoutes.includes(pathname)) {
-    if (role) {
-      url.pathname = role === "admin" ? "/Admin" : "/Dashboard";
-      return NextResponse.redirect(url);
-    }
-    return NextResponse.next();
-  }
-
-  // Protected routes
-  const protectedRoutes = ["/Dashboard", "/Admin", "/Profile", "/Transactions", "/Budget"];
-  if (protectedRoutes.some((r) => pathname.startsWith(r))) {
-    if (!decoded) {
-      url.pathname = "/LoginPage";
-      return NextResponse.redirect(url);
-    }
-
-    // Admin-only check
-    if (pathname.startsWith("/Admin") && role !== "admin") {
-      url.pathname = "/Dashboard";
-      return NextResponse.redirect(url);
-    }
-
-    return NextResponse.next();
-  }
-
-  return NextResponse.next();
 }
 
+// Routes to protect
 export const config = {
   matcher: [
-    "/",
     "/Dashboard/:path*",
+    "/Profile/:path*",
     "/Transactions/:path*",
     "/Budget/:path*",
-    "/Profile/:path*",
     "/Admin/:path*",
-    "/LoginPage",
-    "/CreateAccount",
   ],
   runtime: "nodejs",
 };
