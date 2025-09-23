@@ -3,11 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Navbar,
-  NavbarBrand,
-  NavbarContent,
-  NavbarItem,
-  Avatar,
   Card,
   CardBody,
   CardHeader,
@@ -33,6 +28,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+
+import Navbar from "../../component/Nav/ResponsiveNavbar";
 
 export default function DashboardPage() {
   const [allData, setAllData] = useState([]);
@@ -80,16 +77,21 @@ export default function DashboardPage() {
     if (!userTransactions.length) return setCategoryData([]);
 
     const categoryMap = {};
-    const colors = [
-      "#F97316",
-      "#FACC15",
-      "#3B82F6",
-      "#EF4444",
-      "#10B981",
-      "#8B5CF6",
-      "#EC4899",
-      "#14B8A6",
-    ];
+    // random color genratore
+    function generateUniqueColor() {
+      const used = (generateUniqueColor.used ??= new Set());
+      let c;
+      do
+        c =
+          "#" +
+          (~~(Math.random() * 16777215))
+            .toString(16)
+            .padStart(6, "0")
+            .toUpperCase();
+      while (used.has(c));
+      used.add(c);
+      return c;
+    }
 
     userTransactions.forEach((t) => {
       const category = t.category;
@@ -100,7 +102,7 @@ export default function DashboardPage() {
         categoryMap[category] = {
           name: category,
           value: amount,
-          color: colors.shift() || "#000000",
+          color: generateUniqueColor() || "#000000",
         };
       }
     });
@@ -166,35 +168,8 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
-      <Navbar shouldHideOnScroll>
-        <NavbarBrand>
-          <h1 className="font-bold text-xl">
-            Expense <span className="font-light">Tracker</span>
-          </h1>
-        </NavbarBrand>
-        <NavbarContent justify="center">
-          <NavbarItem>
-            <a href="#">Dashboard</a>
-          </NavbarItem>
-          <NavbarItem>
-            <a href="/Transactions">Transactions</a>
-          </NavbarItem>
-          <NavbarItem>
-            <a href="/Budget">Budgets</a>
-          </NavbarItem>
-        </NavbarContent>
-        <NavbarContent justify="end">
-          <Link href="/Profile">
-            <Avatar
-              as="button"
-              color="primary"
-              name="Profile"
-              size="sm"
-              alt="Profile"
-            />
-          </Link>
-        </NavbarContent>
-      </Navbar>
+
+      <Navbar />
 
       <main className="p-6 space-y-6">
         {/* Top Cards */}

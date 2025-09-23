@@ -1,5 +1,5 @@
 "use client";
-import { useState ,useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Input,
@@ -18,8 +18,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -58,10 +56,12 @@ export default function LoginPage() {
         description: `Welcome , ${user.name}!`,
         color: "success",
       });
-      setLoading(true);
+      
       if (user.role === "admin") router.push("/Admin");
       else router.push("/Dashboard");
-      setLoading(false);
+
+    
+      
     } catch (err) {
       setLoading(false);
       console.error(err);
@@ -72,6 +72,9 @@ export default function LoginPage() {
       });
     }
   };
+
+
+  
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-white via-blue-50 to-blue-200 px-4">
