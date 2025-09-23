@@ -1,11 +1,12 @@
-// logout.js
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { findSessionByRefreshToken, revokeSession, revokeAllSessionsForUser } from "../../../../lib/auth.js";
 
 export async function POST(req) {
-  const cookieStore = await cookies();
-  const refreshToken = cookieStore.get("refreshToken")?.value;
+  const cookieHeader = req.headers.get("cookie") || "";
+  const refreshToken = cookieHeader
+    .split("; ")
+    .find((c) => c.startsWith("refreshToken="))
+    ?.split("=")[1];
 
   if (refreshToken) {
     const session = await findSessionByRefreshToken(refreshToken);
@@ -22,13 +23,15 @@ export async function POST(req) {
     }
   }
 
-  // Clear cookies
-  ["accessToken", "refreshToken"].forEach((name) => {
-    cookieStore.set(name, "", { maxAge: 0, path: "/" });
-  });
-
-  return NextResponse.json({
+  // Use NextResponse to clear cookies
+  const response = NextResponse.json({
     ok: true,
     message: refreshToken ? "Logged out" : "Already logged out",
   });
+
+  // Clear cookies
+  response.cookies.set("accessToken", "", { path: "/", maxAge: 0 });
+  response.cookies.set("refreshToken", "", { path: "/", maxAge: 0 });
+
+  return response;
 }
