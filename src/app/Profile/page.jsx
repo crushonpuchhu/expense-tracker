@@ -92,7 +92,8 @@ export default function ProfileSettings() {
           description: data.message,
           color: "success",
         });
-        router.push("/"); // redirect to home
+        window.location.href = "/";
+        // router.push("/"); // redirect to home
       } else {
         addToast({
           title: "Error",
@@ -110,6 +111,7 @@ export default function ProfileSettings() {
     }
   };
 
+
   // Logout from all devices
   const handleLogoutAll = async () => {
     Setload(true);
@@ -124,7 +126,8 @@ export default function ProfileSettings() {
           description: data.message,
           color: "success",
         });
-        router.push("/"); // redirect to home
+        window.location.href = "/";
+        // router.push("/"); // redirect to home
       } else {
         addToast({
           title: "Error",
