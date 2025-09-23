@@ -256,7 +256,7 @@ export default function ProfileSettings() {
           description: data.message,
           color: "success",
         });
-        router.push("/"); // redirect to home page
+        window.location.href='/';
       } else {
         addToast({
           title: "Error",
