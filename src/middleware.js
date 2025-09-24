@@ -12,7 +12,7 @@ export async function middleware(req) {
   const refreshToken = cookieStore.get("refreshToken")?.value;
 
   const res = NextResponse.next();
-  res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+
 
   const publicPages = ["/", "/LoginPage", "/CreateAccount"];
   const protectedPaths = ["/Dashboard", "/Profile", "/Transactions", "/Budget", "/Admin"];

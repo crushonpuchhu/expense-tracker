@@ -35,8 +35,9 @@ export default function LoginPage() {
             else router.replace("/Dashboard");
           }
         }
+       
       } catch (err) {
-        console.log("No active session");
+        
       }
     };
 
