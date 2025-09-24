@@ -29,11 +29,8 @@ export default function LoginPage() {
 
         if (res.ok) {
           const data = await res.json();
-          if (data?.user) {
-            // Redirect based on role
-            if (data.user.role === "admin") router.replace("/Admin");
-            else router.replace("/Dashboard");
-          }
+          router.replace("/")
+        
         }
        
       } catch (err) {
