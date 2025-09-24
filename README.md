@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+
+
+# Expense Tracker
+
+A **Next.js** web application to track personal expenses and manage budgets. Categorize transactions, monitor spending, and visualize your finances in real-time.
+
+[Live Demo](https://expense-tracker-v1et.vercel.app/)
+
+---
+
+## Features
+
+* Track income and expenses with categories (Groceries, Food, Transport, Freelance, etc.)
+* Set and monitor monthly budgets
+* Real-time charts and summaries
+* User authentication and role-based access (admin/user)
+* Responsive UI for desktop and mobile
+* Built with Next.js 15, React, and Tailwind CSS
+
+---
+
+## Screenshots
+
+![Dashboard Screenshot](https://via.placeholder.com/854x569?text=Dashboard+Screenshot)
+![Transactions Screenshot](https://via.placeholder.com/854x569?text=Transactions+Screenshot)
+
+---
+
+## Tech Stack
+
+* **Framework:** Next.js 15
+* **Language:** JavaScript
+* **Styling:** Tailwind CSS
+* **Authentication:** JWT-based sessions with cookies
+* **Deployment:** Vercel
+
+---
+
+## Environment Variables
+
+Create a `.env.local` file in the project root with the following content:
+
+```env
+<!-- this is mongodb atlas (online version i use) -->
+MONGODB_URI=**********************; #//you  set own
+ JWT_SECRET=********************; #//you  set own
+  JWT_REFRESH_SECRET=****************; #//you  set own
+  ACCESS_TOKEN_EXP=15m # //you can set on
+   REFRESH_TOKEN_DAYS=7  # //you can set own
+```
+
+> **Note:** Never commit `.env.local` to GitHub as it contains sensitive information.
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+* Node.js >= 18.x
+* npm or yarn
+
+### Installation
+
+```bash
+git clone https://github.com/crushonpuchhu/expense-tracker.git
+cd expense-tracker
+npm install
+```
+
+### Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## API Overview
 
-## Learn More
+### Authentication
 
-To learn more about Next.js, take a look at the following resources:
+* **POST** `/api/auth/login` – Log in user (expects `{ email, password }`)
+* **GET** `/api/auth/me` – Get currently logged-in user info (requires cookies)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Transactions
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+* **GET** `/api/transactions` – Get all user transactions
+* **POST** `/api/transactions` – Add a new transaction
+* **PUT** `/api/transactions/:id` – Update a transaction
+* **DELETE** `/api/transactions/:id` – Delete a transaction
 
-## Deploy on Vercel
+> All protected routes require **JWT authentication** via cookies.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Usage
+
+1. Sign up or log in with your account.
+2. Add transactions with category, amount, and notes.
+3. Set monthly budgets.
+4. Track remaining balance and visualize charts.
+
+---
+
+## Deployment
+
+Deploy easily on **Vercel**:
+
+```bash
+vercel
+```
+
+Follow the prompts to link your project and deploy.
+
+---
+
+## Contributing
+
+1. Fork the repository.
+2. Create your feature branch: `git checkout -b feature/your-feature`
+3. Commit your changes: `git commit -m 'Add some feature'`
+4. Push to the branch: `git push origin feature/your-feature`
+5. Open a pull request.
+
+---
+
+## License
+
+This project is open-source and available under the **MIT License**.
+
+---
+
