@@ -20,7 +20,7 @@ export default function Home() {
   
           if (res.ok) {
             const data = await res.json();
-            router.replace("/")
+            router.replace("/Dashboard")
            
 
           }
