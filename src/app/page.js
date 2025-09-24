@@ -5,7 +5,9 @@ import ExpenseTrackerLanding from "../component/landingPage/ExpenseTrackerLandin
 import {Button, HeroUIProvider} from "@heroui/react";
 
 import Link from "next/link";
+import { useEffect } from "react";
 export default function Home() {
+  
   return (
     <div className="  min-h-screen ">
      <HeroUIProvider>

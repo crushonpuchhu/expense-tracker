@@ -19,6 +19,30 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/auth/me", {
+          method: "GET",
+          credentials: "include", // send cookies
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.user) {
+            // Redirect based on role
+            if (data.user.role === "admin") router.replace("/Admin");
+            else router.replace("/Dashboard");
+          }
+        }
+      } catch (err) {
+        console.log("No active session");
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
   const handleSubmit = async () => {
     if (!email || !password) {
       return addToast({
