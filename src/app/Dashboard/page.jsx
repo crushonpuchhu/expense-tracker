@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [userTransactions, setUserTransactions] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
   const [expenseTrendData, setExpenseTrendData] = useState([]);
+  const [whichCurrentSymlobe,SetwhichCurrentSymlobe]=useState('');
 
   // Fetch transactions
   useEffect(() => {
@@ -68,6 +69,30 @@ export default function DashboardPage() {
           color: "danger",
         });
       }
+     
+
+      // user profile data (current tyoe)------->
+       try {
+        const res = await fetch("/api/profile", { credentials: "include" });
+        const data = await res.json();
+        if (res.ok) {
+          SetwhichCurrentSymlobe(data.user.currency);
+        } else {
+          addToast({
+            title: "Error",
+            description: data.error,
+            color: "danger",
+          });
+        }
+      } catch (err) {
+        addToast({
+          title: "Error",
+          description: "Something went wrong",
+          color: "danger",
+        });
+      }
+      // --------->
+
     };
     fetchTransactions();
   }, []);
@@ -178,7 +203,7 @@ export default function DashboardPage() {
             <CardHeader>Total Balance</CardHeader>
             <CardBody>
               <p className="text-2xl font-bold">
-                ₹{calcSummary("monthlyIncome") - calcSummary("monthlyExpense")}
+                {whichCurrentSymlobe+" "}{calcSummary("monthlyIncome") - calcSummary("monthlyExpense")}
               </p>
             </CardBody>
           </Card>
@@ -186,7 +211,7 @@ export default function DashboardPage() {
             <CardHeader>Monthly Income</CardHeader>
             <CardBody>
               <p className="text-2xl font-bold text-green-600">
-                ₹{calcSummary("monthlyIncome")}
+                {whichCurrentSymlobe+" "}{calcSummary("monthlyIncome")}
               </p>
             </CardBody>
           </Card>
@@ -194,7 +219,7 @@ export default function DashboardPage() {
             <CardHeader>Monthly Expenses</CardHeader>
             <CardBody>
               <p className="text-2xl font-bold text-red-600">
-                ₹{calcSummary("monthlyExpense")}
+                {whichCurrentSymlobe+" "}{calcSummary("monthlyExpense")}
               </p>
             </CardBody>
           </Card>
@@ -271,7 +296,7 @@ export default function DashboardPage() {
                     <TableCell>{t.date.split("T")[0]}</TableCell>
                     <TableCell>{t.note}</TableCell>
                     <TableCell>{t.category}</TableCell>
-                    <TableCell className="font-semibold">₹{t.amount}</TableCell>
+                    <TableCell className="font-semibold">{whichCurrentSymlobe+" "}{t.amount}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

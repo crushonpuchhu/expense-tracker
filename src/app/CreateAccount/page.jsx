@@ -18,7 +18,7 @@ export default function CreateAccount() {
   const [email, Setemail] = useState("");
   const [password, SetPassword] = useState("");
   const [phonenummber, Setphonenummber] = useState("");
-  const [currency, Setcurrency] = useState("");
+  const [currency, Setcurrency] = useState("INR");
 
   
 

@@ -317,7 +317,7 @@ export default function ProfileSettings() {
         <div className="p-4 rounded-xl bg-gray-100 dark:bg-gray-800">
           <h4 className="text-sm text-gray-500">Balance</h4>
           <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            {"₹ "}
+            {userdata.currency+" "}
             {userTranction != []
               ? DataSummery("mounth income") - DataSummery("total expence")
               : 0}
@@ -327,14 +327,14 @@ export default function ProfileSettings() {
           <h4 className="text-sm text-gray-500">Income</h4>
           <p className="text-xl font-semibold text-green-600 dark:text-green-400">
             {/* $8,000 mounth income */}
-            {"₹ "}
+            {userdata.currency+" "}
             {userTranction != [] ? DataSummery("mounth income") : 0}
           </p>
         </div>
         <div className="p-4 rounded-xl bg-red-100 dark:bg-red-900/40">
           <h4 className="text-sm text-gray-500">Expenses</h4>
           <p className="text-xl font-semibold text-red-600 dark:text-red-400">
-            {"₹ "}
+            {userdata.currency+" "}
             {userTranction != [] ? DataSummery("total expence") : 0}
           </p>
         </div>

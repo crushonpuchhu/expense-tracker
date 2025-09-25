@@ -37,6 +37,8 @@ export default function TransactionsPage() {
     
   ]);
 
+  const [whichCurrentSymlobe,SetwhichCurrentSymlobe]=useState('');
+
 //  fetch transaaction
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -65,6 +67,30 @@ export default function TransactionsPage() {
           color:'danger',
         });
       }
+
+
+      
+      // user profile data (current tyoe)------->
+       try {
+        const res = await fetch("/api/profile", { credentials: "include" });
+        const data = await res.json();
+        if (res.ok) {
+          SetwhichCurrentSymlobe(data.user.currency);
+        } else {
+          addToast({
+            title: "Error",
+            description: data.error,
+            color: "danger",
+          });
+        }
+      } catch (err) {
+        addToast({
+          title: "Error",
+          description: "Something went wrong",
+          color: "danger",
+        });
+      }
+      // --------->
     };
 
     fetchTransactions();
@@ -336,7 +362,7 @@ export default function TransactionsPage() {
                 <TableRow key={tx._id}>
                   <TableCell>{tx.date.split("T")[0]}</TableCell>
                   <TableCell className="font-semibold text-blue-600">
-                    ₹{tx.amount}
+                    {whichCurrentSymlobe+" "}{tx.amount}
                   </TableCell>
                   <TableCell>{tx.category}</TableCell>
                   <TableCell>{tx.method}</TableCell>
