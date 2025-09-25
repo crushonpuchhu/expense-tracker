@@ -14,7 +14,7 @@ export async function middleware(req) {
   const res = NextResponse.next();
 
 
-  const publicPages = ["/", "/LoginPage", "/CreateAccount"];
+  const publicPages = ["/", "/LoginPage", "/CreateAccount","/ForgotResetPassword"];
   const protectedPaths = ["/Dashboard", "/Profile", "/Transactions", "/Budget", "/Admin"];
 
   try {
@@ -90,7 +90,8 @@ export const config = {
     "/Budget/:path*", 
     "/Admin/:path*", 
     "/LoginPage", 
-    "/CreateAccount"
+    "/CreateAccount",
+    "/ForgotResetPassword"
   ],
   runtime: "nodejs",
 };
