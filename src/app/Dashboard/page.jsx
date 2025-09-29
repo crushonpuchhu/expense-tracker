@@ -281,6 +281,7 @@ export default function DashboardPage() {
             <Link href="/Transactions">
               <Button color="primary">Add Expense</Button>
             </Link>
+           
           </CardHeader>
           <CardBody>
             <Table aria-label="Recent Transactions Table">
