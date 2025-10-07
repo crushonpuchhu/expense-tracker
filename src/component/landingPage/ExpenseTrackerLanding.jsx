@@ -5,8 +5,9 @@ import { useState } from "react";
 export default function ExpenseTrackerLanding() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
+
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans">
+    <div className="min-h-screen bg-white text-slate-900 font-sans  ">
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-slate-200">
         <div className="max-w-6xl mx-auto flex justify-between items-center px-4 py-3">
@@ -80,7 +81,7 @@ export default function ExpenseTrackerLanding() {
           <p className="text-slate-600 max-w-2xl mx-auto md:mx-0">
             Expense Tracker brings your money into focus. Categorize purchases,
             set monthly budgets, and visualize progress in real time—across
-            devices.
+            devices. <a href="/collectionOfAllFun">Tools {"->"} </a>
           </p>
           <div className="flex flex-wrap gap-3 justify-center md:justify-start">
             <a
