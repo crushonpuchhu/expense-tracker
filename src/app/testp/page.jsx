@@ -1,75 +1,30 @@
 "use client";
-
 import React from "react";
-import { motion } from "framer-motion";
 
-export default function TextRevealCardPreview() {
+export default function IncomeProgressBar({ percentage=40 }) {
+  // Determine bar color based on percentage
+  const getBarColor = () => {
+    if (percentage < 50) return "bg-green-500";
+    if (percentage < 80) return "bg-yellow-400";
+    return "bg-red-500";
+  };
+
   return (
-    <div className="flex items-center justify-center bg-[#0E0E10] h-[40rem] w-full p-4">
-      <RevealCard
-        mainText="You know the business"
-        revealText="I know the chemistry"
-        title="Sometimes, you just need to see it."
-        description="This is a text reveal card. Hover over the card to reveal the hidden text."
-      />
+    <div className="w-full p-2 bg-gray-200 dark:bg-gray-700 rounded-lg">
+      <div className="flex justify-between mb-1">
+        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+          Income Used
+        </span>
+        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+          {percentage}%
+        </span>
+      </div>
+      <div className="w-full bg-gray-300 dark:bg-gray-600 h-4 rounded-lg overflow-hidden">
+        <div
+          className={`${getBarColor()} h-4 rounded-lg transition-all duration-500`}
+          style={{ width: `${percentage}%` }}
+        ></div>
+      </div>
     </div>
-  );
-}
-
-function RevealCard({ mainText, revealText, title, description }) {
-  return (
-    <motion.div
-      className="relative bg-[#1C1C1E] rounded-2xl p-8 w-full max-w-md cursor-pointer shadow-xl overflow-hidden"
-      initial="rest"
-      whileHover="hover"
-    >
-      {/* Main text */}
-      <motion.div
-        className="text-white text-2xl font-bold"
-        variants={{
-          rest: { opacity: 1, y: 0 },
-          hover: { opacity: 0.3, y: -20 },
-        }}
-        transition={{ duration: 0.5 }}
-      >
-        {mainText}
-      </motion.div>
-
-      {/* Revealed text */}
-      <motion.div
-        className="absolute top-8 left-8 text-white text-2xl font-bold"
-        variants={{
-          rest: { opacity: 0, y: 20 },
-          hover: { opacity: 1, y: 0 },
-        }}
-        transition={{ duration: 0.5 }}
-      >
-        {revealText}
-      </motion.div>
-
-      {/* Title */}
-      <motion.h3
-        className="text-white text-lg font-semibold mt-8"
-        variants={{
-          rest: { opacity: 0.7 },
-          hover: { opacity: 1 },
-        }}
-        transition={{ duration: 0.5 }}
-      >
-        {title}
-      </motion.h3>
-
-      {/* Description */}
-      <motion.p
-        className="text-white/70 mt-2 text-sm"
-        variants={{
-          rest: { opacity: 0.5 },
-          hover: { opacity: 0.9 },
-        }}
-        transition={{ duration: 0.5 }}
-      >
-        {description}
-      </motion.p>
-    </motion.div>
   );
 }

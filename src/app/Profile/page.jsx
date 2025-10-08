@@ -7,6 +7,7 @@ import {
   Divider,
   Switch,
   addToast,
+  Alert,
 } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import Loading from "../../component/LodingUi/Loding.jsx";
@@ -22,6 +23,9 @@ export default function ProfileSettings() {
   const [password, Setpassword] = useState("");
   const [currentpassword, Setcurrentpassword] = useState("");
 
+
+
+
   useEffect(() => {
     //   user data get
     const fetchProfile = async () => {
@@ -30,6 +34,7 @@ export default function ProfileSettings() {
         const data = await res.json();
         if (res.ok) {
           Setuserdata(data.user);
+
         } else {
           addToast({
             title: "Error",
@@ -44,6 +49,9 @@ export default function ProfileSettings() {
           color: "danger",
         });
       }
+     
+
+
     };
 
     //  fetch user tranction
@@ -58,6 +66,9 @@ export default function ProfileSettings() {
           );
 
           SetuserTranction(filteredTransactions); // 👈 define state: const [transactions, SetTransactions] = useState([]);
+          
+          
+
         } else {
           addToast({
             title: "error",
@@ -296,6 +307,20 @@ export default function ProfileSettings() {
     return null;
   }
 
+    function calculateUsedPercentage(income, spent) {
+  if (income === 0) return 0; // to avoid division by zero
+  const percentage = (spent / income) * 100;
+  return percentage.toFixed(2); // returns value with 2 decimal places
+}
+
+const percentage = calculateUsedPercentage(DataSummery("mounth income"), DataSummery("total expence"));
+
+   function getBarColor () {
+    if (percentage < 50) return "bg-green-500";
+    if (percentage < 80) return "bg-yellow-400";
+    return "bg-red-500";
+  };
+
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-10">
       {/* Header */}
@@ -339,7 +364,26 @@ export default function ProfileSettings() {
           </p>
         </div>
       </div>
-
+      {/* percentage c
+      show */}
+      <div className="w-full p-2  dark:bg-gray-700 rounded-lg">
+      <div className="flex justify-between mb-1">
+        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+          Income Used
+        </span>
+        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+          {percentage}%
+        </span>
+      </div>
+      <div className="w-full bg-gray-300 dark:bg-gray-600 h-4 rounded-lg overflow-hidden">
+        <div
+          className={`${getBarColor()} h-4 rounded-lg transition-all duration-500`}
+          style={{ width: `${percentage}%` }}
+        ></div>
+      </div>
+    </div>
+   
+       <Alert color='warning' title={`You Used ${percentage}% of your Income on this mounth`} />
       <Divider />
 
       {/* Update Profile */}
