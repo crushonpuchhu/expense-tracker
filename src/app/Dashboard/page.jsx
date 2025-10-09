@@ -292,7 +292,7 @@ export default function DashboardPage() {
                 <TableColumn>Amount</TableColumn>
               </TableHeader>
               <TableBody>
-                {userTransactions.map((t) => (
+                {userTransactions.slice(0, 5).map((t) => (
                   <TableRow key={t._id}>
                     <TableCell>{t.date.split("T")[0]}</TableCell>
                     <TableCell>{t.note}</TableCell>

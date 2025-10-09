@@ -313,6 +313,8 @@ export default function ProfileSettings() {
     if (percentage < 80) return "bg-yellow-400";
     return "bg-red-500";
   }
+
+  // Most frequent transaction method code -------->
   function getMostFrequentTransactionMethod(transactions) {
     if (!Array.isArray(transactions) || transactions.length === 0) return null;
 
@@ -328,6 +330,41 @@ export default function ProfileSettings() {
     return { method, count };
   }
   const mostFrequent = getMostFrequentTransactionMethod(userTranction);
+  //---------------------->
+
+  // random color for Aavtar background----------------------->
+  function getRandomGradient() {
+    const colors = [
+  "#6366F1", // Indigo glow
+  "#8B5CF6", // Soft purple
+  "#EC4899", // Pink accent
+  "#F59E0B", // Amber warmth
+  "#10B981", // Emerald green
+  "#06B6D4", // Cyan mint
+  "#3B82F6", // Classic blue
+  "#14B8A6", // Teal modern
+  "#A855F7", // Vivid violet
+  "#E879F9", // Light magenta
+  "#F472B6", // Soft rose
+  "#38BDF8", // Sky blue
+];
+
+
+    const c1 = colors[Math.floor(Math.random() * colors.length)];
+    const c2 = colors[Math.floor(Math.random() * colors.length)];
+
+    return `linear-gradient(135deg, ${c1}, ${c2})`;
+  }
+  const [avatarGradient, setAvatarGradient] = useState(null);
+
+  // ✅ add this inside your component, right after useState definitions
+  useEffect(() => {
+    // Runs only on client — avoids hydration mismatch
+    setAvatarGradient(getRandomGradient());
+  }, []);
+
+  //----------------------------------------------->
+  
   return (
     <>
       <div className="max-w-3xl mx-auto p-6 space-y-10">
@@ -340,6 +377,11 @@ export default function ProfileSettings() {
             }
             size="lg"
             radius="full"
+            style={{
+              backgroundImage:
+                avatarGradient || "linear-gradient(135deg, #ccc, #999)",
+              color: "white",
+            }}
           />
           <div>
             <h2 className="text-2xl font-semibold">{userdata.name}</h2>

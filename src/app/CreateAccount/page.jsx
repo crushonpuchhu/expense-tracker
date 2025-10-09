@@ -140,6 +140,9 @@ export default function CreateAccount() {
             onChange={(e) => {
               Setemail(e.target.value);
             }}
+            onClear={() => {
+              Setemail("");
+            }}
           />
 
           {/* Password */}

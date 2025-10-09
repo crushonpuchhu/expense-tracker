@@ -11,14 +11,14 @@ import {
   addToast,
 } from "@heroui/react";
 import Loading from "../../component/LodingUi/Loding.jsx";
-
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const [visible, setVisible] = useState(false);
     useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -115,20 +115,35 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               radius="lg"
+               onClear={() => setEmail("")} 
               variant="bordered"
               isClearable
               required
             />
             <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              radius="lg"
-              variant="bordered"
-              required
-            />
+      label="Password"
+      type={visible ? "text" : "password"}
+      placeholder="••••••••"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      radius="lg"
+      variant="bordered"
+      required
+      maxLength={8}
+      endContent={
+        <button
+          type="button"
+          onClick={() => setVisible((prev) => !prev)}
+          className="focus:outline-none"
+        >
+          {visible ? (
+            <EyeOffIcon className="text-gray-500" size={20} />
+          ) : (
+            <EyeIcon className="text-gray-500" size={20} />
+          )}
+        </button>
+      }
+    />
             <div className="flex justify-between items-center text-sm">
               <a href="/ForgotResetPassword" className="text-indigo-600 hover:underline">
                 Forgot password?
