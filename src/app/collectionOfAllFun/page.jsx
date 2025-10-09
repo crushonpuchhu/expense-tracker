@@ -24,7 +24,7 @@ export default function ToolsPage() {
       link: "#",
     },
     {
-      name: "Setper component",
+      name: "Steper component",
       desc: "Modern Steper UI with smooth flow.",
       icon: <StepForward  className="w-10 h-10 text-pink-500" />,
       link: "/steperr",
