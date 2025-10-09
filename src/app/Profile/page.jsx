@@ -8,6 +8,7 @@ import {
   Switch,
   addToast,
   Alert,
+  Skeleton,
 } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import Loading from "../../component/LodingUi/Loding.jsx";
@@ -23,9 +24,6 @@ export default function ProfileSettings() {
   const [password, Setpassword] = useState("");
   const [currentpassword, Setcurrentpassword] = useState("");
 
-
-
-
   useEffect(() => {
     //   user data get
     const fetchProfile = async () => {
@@ -34,7 +32,6 @@ export default function ProfileSettings() {
         const data = await res.json();
         if (res.ok) {
           Setuserdata(data.user);
-
         } else {
           addToast({
             title: "Error",
@@ -49,9 +46,6 @@ export default function ProfileSettings() {
           color: "danger",
         });
       }
-     
-
-
     };
 
     //  fetch user tranction
@@ -66,9 +60,6 @@ export default function ProfileSettings() {
           );
 
           SetuserTranction(filteredTransactions); // 👈 define state: const [transactions, SetTransactions] = useState([]);
-          
-          
-
         } else {
           addToast({
             title: "error",
@@ -121,7 +112,6 @@ export default function ProfileSettings() {
       });
     }
   };
-
 
   // Logout from all devices
   const handleLogoutAll = async () => {
@@ -267,7 +257,7 @@ export default function ProfileSettings() {
           description: data.message,
           color: "success",
         });
-        window.location.href='/';
+        window.location.href = "/";
       } else {
         addToast({
           title: "Error",
@@ -307,156 +297,194 @@ export default function ProfileSettings() {
     return null;
   }
 
-    function calculateUsedPercentage(income, spent) {
-  if (income === 0) return 0; // to avoid division by zero
-  const percentage = (spent / income) * 100;
-  return percentage.toFixed(2); // returns value with 2 decimal places
-}
+  function calculateUsedPercentage(income, spent) {
+    if (income === 0) return 0; // to avoid division by zero
+    const percentage = (spent / income) * 100;
+    return percentage.toFixed(2); // returns value with 2 decimal places
+  }
 
-const percentage = calculateUsedPercentage(DataSummery("mounth income"), DataSummery("total expence"));
+  const percentage = calculateUsedPercentage(
+    DataSummery("mounth income"),
+    DataSummery("total expence")
+  );
 
-   function getBarColor () {
+  function getBarColor() {
     if (percentage < 50) return "bg-green-500";
     if (percentage < 80) return "bg-yellow-400";
     return "bg-red-500";
-  };
+  }
+  function getMostFrequentTransactionMethod(transactions) {
+    if (!Array.isArray(transactions) || transactions.length === 0) return null;
 
+    const counts = transactions.reduce((acc, { method }) => {
+      if (method) acc[method] = (acc[method] || 0) + 1;
+      return acc;
+    }, {});
+
+    const [method, count] = Object.entries(counts).reduce((a, b) =>
+      b[1] > a[1] ? b : a
+    );
+
+    return { method, count };
+  }
+  const mostFrequent = getMostFrequentTransactionMethod(userTranction);
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-10">
-      {/* Header */}
-      {load ? <Loading /> : null}
-      <div className="flex items-center gap-4">
-        <Avatar
-          name={userdata.name ? userdata.name.charAt(0).toUpperCase() : "user"}
-          size="lg"
-          radius="full"
-        />
-        <div>
-          <h2 className="text-2xl font-semibold">{userdata.name}</h2>
-          <p className="text-gray-500">{userdata.email}</p>
+    <>
+      <div className="max-w-3xl mx-auto p-6 space-y-10">
+        {/* Header */}
+        {load ? <Loading /> : null}
+        <div className="flex items-center gap-4">
+          <Avatar
+            name={
+              userdata.name ? userdata.name.charAt(0).toUpperCase() : "user"
+            }
+            size="lg"
+            radius="full"
+          />
+          <div>
+            <h2 className="text-2xl font-semibold">{userdata.name}</h2>
+            <p className="text-gray-500">{userdata.email}</p>
+          </div>
         </div>
-      </div>
 
-      {/* Balance Overview */}
-      <div className="grid grid-cols-3 gap-4 text-center">
-        <div className="p-4 rounded-xl bg-gray-100 dark:bg-gray-800">
-          <h4 className="text-sm text-gray-500">Balance</h4>
-          <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            {userdata.currency+" "}
-            {userTranction != []
-              ? DataSummery("mounth income") - DataSummery("total expence")
-              : 0}
-          </p>
+        {/* Balance Overview */}
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="p-4 rounded-xl bg-gray-100 dark:bg-gray-800">
+            <h4 className="text-sm text-gray-500">Balance</h4>
+            <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {userdata.currency + " "}
+              {userTranction != []
+                ? DataSummery("mounth income") - DataSummery("total expence")
+                : 0}
+            </p>
+          </div>
+          <div className="p-4 rounded-xl bg-green-100 dark:bg-green-900/40">
+            <h4 className="text-sm text-gray-500">Income</h4>
+            <p className="text-xl font-semibold text-green-600 dark:text-green-400">
+              {/* $8,000 mounth income */}
+              {userdata.currency + " "}
+              {userTranction != [] ? DataSummery("mounth income") : 0}
+            </p>
+          </div>
+          <div className="p-4 rounded-xl bg-red-100 dark:bg-red-900/40">
+            <h4 className="text-sm text-gray-500">Expenses</h4>
+            <p className="text-xl font-semibold text-red-600 dark:text-red-400">
+              {userdata.currency + " "}
+              {userTranction != [] ? DataSummery("total expence") : 0}
+            </p>
+          </div>
         </div>
-        <div className="p-4 rounded-xl bg-green-100 dark:bg-green-900/40">
-          <h4 className="text-sm text-gray-500">Income</h4>
-          <p className="text-xl font-semibold text-green-600 dark:text-green-400">
-            {/* $8,000 mounth income */}
-            {userdata.currency+" "}
-            {userTranction != [] ? DataSummery("mounth income") : 0}
-          </p>
-        </div>
-        <div className="p-4 rounded-xl bg-red-100 dark:bg-red-900/40">
-          <h4 className="text-sm text-gray-500">Expenses</h4>
-          <p className="text-xl font-semibold text-red-600 dark:text-red-400">
-            {userdata.currency+" "}
-            {userTranction != [] ? DataSummery("total expence") : 0}
-          </p>
-        </div>
-      </div>
-      {/* percentage c
+        {/* percentage c
       show */}
-      <div className="w-full p-2  dark:bg-gray-700 rounded-lg">
-      <div className="flex justify-between mb-1">
-        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-          Income Used
-        </span>
-        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-          {percentage}%
-        </span>
+
+        {userTranction.length > 0 ? (
+          <div className="   space-y-10">
+            {" "}
+            <div className="w-full p-2  dark:bg-gray-700 rounded-lg">
+              <div className="flex justify-between mb-1">
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  Income Used
+                </span>
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {percentage}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-300 dark:bg-gray-600 h-4 rounded-lg overflow-hidden">
+                <div
+                  className={`${getBarColor()} h-4 rounded-lg transition-all duration-500`}
+                  style={{ width: `${percentage}%` }}
+                ></div>
+              </div>
+            </div>
+            <Alert
+              color="warning"
+              title={` You Used ${percentage}% of your Income on this mounth`}
+            />
+            <Alert
+              color="success"
+              title={
+                mostFrequent
+                  ? `Most frequent transaction method used by you is: ${mostFrequent.method}, ${mostFrequent.count} times`
+                  : "No transactions found yet."
+              }
+            />
+          </div>
+        ) : null}
+
+        <Divider />
+
+        {/* Update Profile */}
+        <section className="space-y-4">
+          <h3 className="text-lg font-medium">Update Profile</h3>
+          <Input
+            onChange={(e) => {
+              Setname(e.target.value);
+            }}
+            label="Name"
+            placeholder={userdata.name}
+          />
+          <Button
+            onPress={() => {
+              handleUpdateName();
+            }}
+            color="primary"
+            className="w-fit"
+          >
+            Save Changes
+          </Button>
+        </section>
+
+        <Divider />
+
+        {/* Change Password */}
+        <section className="space-y-4">
+          <h3 className="text-lg font-medium">Change Password</h3>
+          <Input
+            type="password"
+            label="Current Password"
+            placeholder="••••••••"
+            onChange={(e) => {
+              Setcurrentpassword(e.target.value);
+            }}
+          />
+
+          <Input
+            type="password"
+            label="New Password"
+            placeholder="••••••••"
+            onChange={(e) => {
+              Setpassword(e.target.value);
+            }}
+          />
+          <Button
+            onPress={() => {
+              handleUpdatePassword();
+            }}
+            color="primary"
+            className="w-fit"
+          >
+            Update Password
+          </Button>
+        </section>
+
+        <Divider />
+
+        {/* Manage Account */}
+        <section className="space-y-4">
+          <h3 className="text-lg font-medium">Manage Account</h3>
+          <div className="flex gap-3">
+            <Button onPress={handleDeleteAccount} color="danger" variant="flat">
+              Delete Account
+            </Button>
+            <Button onPress={handleLogout} color="default" variant="ghost">
+              Logout
+            </Button>
+            <Button onPress={handleLogoutAll} color="warning" variant="flat">
+              Logout from All Devices
+            </Button>
+          </div>
+        </section>
       </div>
-      <div className="w-full bg-gray-300 dark:bg-gray-600 h-4 rounded-lg overflow-hidden">
-        <div
-          className={`${getBarColor()} h-4 rounded-lg transition-all duration-500`}
-          style={{ width: `${percentage}%` }}
-        ></div>
-      </div>
-    </div>
-   
-       <Alert color='warning' title={`You Used ${percentage}% of your Income on this mounth`} />
-      <Divider />
-
-      {/* Update Profile */}
-      <section className="space-y-4">
-        <h3 className="text-lg font-medium">Update Profile</h3>
-        <Input
-          onChange={(e) => {
-            Setname(e.target.value);
-          }}
-          label="Name"
-          placeholder={userdata.name}
-        />
-        <Button
-          onPress={() => {
-            handleUpdateName();
-          }}
-          color="primary"
-          className="w-fit"
-        >
-          Save Changes
-        </Button>
-      </section>
-
-      <Divider />
-
-      {/* Change Password */}
-      <section className="space-y-4">
-        <h3 className="text-lg font-medium">Change Password</h3>
-        <Input
-          type="password"
-          label="Current Password"
-          placeholder="••••••••"
-          onChange={(e) => {
-            Setcurrentpassword(e.target.value);
-          }}
-        />
-
-        <Input
-          type="password"
-          label="New Password"
-          placeholder="••••••••"
-          onChange={(e) => {
-            Setpassword(e.target.value);
-          }}
-        />
-        <Button
-          onPress={() => {
-            handleUpdatePassword();
-          }}
-          color="primary"
-          className="w-fit"
-        >
-          Update Password
-        </Button>
-      </section>
-
-      <Divider />
-
-      {/* Manage Account */}
-      <section className="space-y-4">
-        <h3 className="text-lg font-medium">Manage Account</h3>
-        <div className="flex gap-3">
-          <Button onPress={handleDeleteAccount} color="danger" variant="flat">
-            Delete Account
-          </Button>
-          <Button onPress={handleLogout} color="default" variant="ghost">
-            Logout
-          </Button>
-          <Button onPress={handleLogoutAll} color="warning" variant="flat">
-            Logout from All Devices
-          </Button>
-        </div>
-      </section>
-    </div>
+    </>
   );
 }
