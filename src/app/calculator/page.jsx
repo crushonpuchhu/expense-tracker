@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { FiDelete } from "react-icons/fi";
 import { BiReset } from "react-icons/bi";
-// calculator
+
 export default function ModernDarkCalculator() {
   const [input, setInput] = useState("");
 

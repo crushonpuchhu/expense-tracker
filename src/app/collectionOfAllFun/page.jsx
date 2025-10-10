@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShieldCheck, Wallet, BarChart3, Map,StepForward ,IndianRupee } from "lucide-react";
+import { ShieldCheck, Wallet, Calculator, Map,StepForward ,IndianRupee } from "lucide-react";
 
 export default function ToolsPage() {
   const tools = [
@@ -18,10 +18,10 @@ export default function ToolsPage() {
       link: "/balanceCheck",
     },
     {
-      name: "Dashboard",
-      desc: "Analyze data with charts, cards, and tables.",
-      icon: <BarChart3 className="w-10 h-10 text-blue-500" />,
-      link: "#",
+      name: "Calculator",
+      desc: " Calculator your expression ",
+      icon: < Calculator className="w-10 h-10 text-blue-500" />,
+      link: "/calculator",
     },
     {
       name: "Steper component",
